@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>简易弹球游戏</title>
+	<script type="text/javascript" src="build/react.min.js"></script>
+    <script type="text/javascript" src="build/react-dom.min.js"></script>
+    <script type="text/javascript" src="build/browser.min.js"></script>
+    <style type="text/css">
+	#game-canvas {
+		border: 1px solid #000000;
+	}
+    </style>
+</head>
+<body>
+    <script type="text/babel">
+      var GameView = React.createClass({
+      	getInitialState: function() {
+      		return {
+	      		ballCenterX: 100,
+	      		ballCenterY: 100,
+	      		ballRadius: 10,
+	      		boardPosX: 20,
+	      		boardPosY: 350,
+	      		boardWidth: 80,
+	      		boardHeight: 10,
+	      		isBegin: false,
+	      		context: null,
+	      		speedX: 10,
+	      		speedY: 10,
+	      		speedDelta: 5,
+	      		refreshInterval: 50,
+	      		gameViewWidth: 250,
+	      		gameViewHeight: 400,
+	      	};
+      	},
+      	render: function() {
+      		return (
+      			<canvas id="game-canvas" width={this.state.gameViewWidth} height={this.state.gameViewHeight} onClick={this.handleClick} onTouchMove={this.handleTouchMove}></canvas>
+      		);
+      	},
+      	drawBall: function() {
+      		var context = this.state.context;
+      		context.beginPath();
+      		context.arc(this.state.ballCenterX, this.state.ballCenterY, this.state.ballRadius, 0, Math.PI * 2, true);
+      		context.closePath();
+      		context.fillStyle = '#6699FF';
+      		context.fill();
+      	},
+      	drawBoard: function() {
+      		var context = this.state.context;
+      		context.fillStyle = '#6699FF';
+      		context.fillRect(this.state.boardPosX, this.state.boardPosY, this.state.boardWidth, this.state.boardHeight);
+      	},
+      	clearBackground: function() {
+      		var context = this.state.context;
+      		context.fillStyle = '#FFFFFF';
+      		context.fillRect(0, 0, this.state.gameViewWidth, this.state.gameViewHeight);
+      	},
+      	draw: function() {
+      		this.clearBackground();
+      		this.drawBall();
+  			this.drawBoard();
+  			this.state.ballCenterX += this.state.speedX;
+  			this.state.ballCenterY += this.state.speedY;
+  			if(this.state.ballCenterX + this.state.ballRadius > this.state.gameViewWidth) {
+  				this.state.ballCenterX = this.state.gameViewWidth - this.state.ballRadius;
+  				this.state.speedX = -this.state.speedX;
+  			}
+  			if(this.state.ballCenterX - this.state.ballRadius < 0) {
+  				this.state.ballCenterX = this.state.ballRadius;
+  				this.state.speedX = -this.state.speedX;	
+  			}
+  			if(this.state.ballCenterY - this.state.ballRadius < 0) {
+  				this.state.ballCenterY = this.state.ballRadius;
+  				this.state.speedY = -this.state.speedY;
+  			}
+  			if(this.state.ballCenterY + this.state.ballRadius > this.state.gameViewHeight) {
+  				this.state.ballCenterY = this.state.gameViewHeight - this.state.ballRadius;
+  				this.state.speedY = -this.state.speedY;	
+  			}
+      	},
+      	handleClick: function() {
+      		if(!this.state.isBegin) {
+      			var canvas = document.getElementById('game-canvas');
+      			var context = canvas.getContext('2d');
+				context.fillStyle = '#6699FF';		      		
+	      		this.state.context = context;
+	      		this.drawBall();
+      			this.drawBoard();
+	      		setInterval(this.draw, this.state.refreshInterval);
+	      		this.state.isBegin = true;
+      		}
+      	},
+      	handleTouchMove: function(event) {
+      		var x = event.clientX;
+      		this.state.boardPosX = x - parseInt(this.state.boardWidth / 2, 10);
+      		if(this.state.boardPosX < 0) {
+      			this.state.boardPosX = 0;
+      		}
+      		if(this.state.boardPosX + this.state.boardWidth > this.state.gameViewWidth) {
+      			this.state.boardPosX = this.state.gameViewWidth - this.state.boardWidth;
+      		}
+      	}
+      });
+
+      ReactDOM.render(
+        <GameView />,
+        document.body
+      );
+    </script>
+</body>
+</html>
