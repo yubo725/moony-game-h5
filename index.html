@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>简易弹球游戏</title>
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<script type="text/javascript" src="build/react.min.js"></script>
+  <script type="text/javascript" src="build/react-dom.min.js"></script>
+  <script type="text/javascript" src="build/browser.min.js"></script>
+  <style type="text/css">
+    body {
+      text-align: center;
+    }
+	  #game-canvas {
+		  border: 1px solid #6699FF;
+      margin: 0 auto;
+	  }
+    #score-div {
+      text-align: center;
+      color: red;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    #welcome-div {
+      text-align: center;
+      border: 1px solid #000000;
+      border-radius: 5px;
+      width: 200px;
+      height: 50px;
+      margin: 0 auto;
+    }
+    .welcome-text {
+      line-height: 50px;
+    }
+    #score-result {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .welcome-view {
+      margin-top: 150px;
+    }
+    .gameover-view {
+      margin-top: 150px;
+    }
+    .weixin-hint {
+      font-size: 30px;
+      font-weight: bold;
+      color: red;
+      margin-top: 150px;
+    }
+  </style>
+</head>
+<body>
+    <script type="text/babel">
+      var GameView = React.createClass({
+      	getInitialState: function() {
+      		return {
+            stateCode: 0,
+            gameViewWidth: 900,
+            gameViewHeight: 1500,
+	      		ballCenterX: 100,
+	      		ballCenterY: 100,
+	      		ballRadius: 10,
+	      		boardPosX: 20,
+	      		boardPosY: 500,
+	      		boardWidth: 80,
+	      		boardHeight: 10,
+	      		isBegin: false,
+	      		context: null,
+	      		speedX: 10,
+	      		speedY: 10,
+	      		speedDelta: 3,
+	      		refreshInterval: 50,
+            score: 0,
+            scoreDOM: null,
+            isGameOver: false,
+            timer: null,
+	      	};
+      	},
+      	render: function() {
+          if(!this.isOpenInWeiXin()) {
+            console.error('not open in weixin...');
+            return this.renderNotInWeixinView();
+          }
+          switch(this.state.stateCode) {
+            case -1: //游戏结束
+              return this.renderGameOverView();
+            break;
+            case 0: //游戏欢迎界面
+              return this.renderWelcomeView();
+            break;
+            case 1: //游戏界面
+              return this.renderGameView();
+            break;
+          }
+      	},
+        renderWelcomeView: function() {
+          this.initData();
+          return (
+            <div className="welcome-view">
+              <div onClick={this.showGameView} id="welcome-div">
+                <div className="welcome-text">点击这里开始游戏！</div>
+              </div>
+            </div>
+          );
+        },
+        initData: function() {
+          this.state.gameViewWidth = document.documentElement.clientWidth - 50;
+          this.state.gameViewHeight = document.documentElement.clientHeight - 50;
+          this.state.ballRadius = parseInt(this.state.gameViewWidth / 30, 10);
+          this.state.boardWidth = this.state.ballRadius * 6;
+          this.state.boardHeight = this.state.ballRadius;
+          this.state.boardPosY = this.state.gameViewHeight - this.state.boardHeight * 8;
+          this.state.boardPosX = parseInt((this.state.gameViewWidth - this.state.boardWidth) / 2, 10);
+          this.state.ballCenterX = 100;
+          this.state.ballCenterY = 100;
+          this.state.speedX = 10;
+          this.state.speedY = 10;
+        },
+        renderGameView: function() {
+          return (
+            <div>
+              <div id="score-div" width={this.state.gameViewWidth}>得分：0</div>
+              <canvas 
+                id="game-canvas" 
+                width={this.state.gameViewWidth} 
+                height={this.state.gameViewHeight}
+                onTouchMove={this.handleMouseMove} />
+            </div>
+          );
+        },
+        renderGameOverView: function() {
+          this.initData();
+          return (
+            <div className="gameover-view">
+              <div id="score-result"></div>
+              <div onClick={this.showGameView} id="welcome-div">
+                <div className="welcome-text">点击这里开始游戏！</div>
+              </div>
+            </div>
+          );
+        },
+        renderNotInWeixinView: function() {
+          return (
+            <div className="weixin-hint">请用微信打开本页面</div>
+          );
+        },
+        showGameView: function() {
+          this.state.score = 0;
+          this.setState({stateCode: 1});
+        },
+        componentDidUpdate: function() {
+          if(this.state.stateCode == 1) {
+            this.startGame();
+          }else if(this.state.stateCode == -1) {
+            document.getElementById('score-result').innerHTML = '你的得分为：' + this.state.score;
+            this.setState({isBegin: false, isGameOver: false});
+          }
+        },
+      	drawBall: function() {
+      		var context = this.state.context;
+      		context.beginPath();
+      		context.arc(this.state.ballCenterX, this.state.ballCenterY, this.state.ballRadius, 0, Math.PI * 2, true);
+      		context.closePath();
+      		context.fillStyle = '#6699FF';
+      		context.fill();
+      	},
+      	drawBoard: function() {
+      		var context = this.state.context;
+      		context.fillStyle = '#6699FF';
+      		context.fillRect(this.state.boardPosX, this.state.boardPosY, this.state.boardWidth, this.state.boardHeight);
+      	},
+      	clearBackground: function() {
+      		var context = this.state.context;
+      		context.fillStyle = '#FFFFFF';
+      		context.fillRect(0, 0, this.state.gameViewWidth, this.state.gameViewHeight);
+      	},
+        gameOver: function() {
+          this.setState({stateCode: -1});
+        },
+      	draw: function() {
+          if(this.state.isGameOver) {
+            if(this.state.timer != null) {
+              clearInterval(this.state.timer);
+              this.state.timer = null;
+            }
+            setTimeout(this.gameOver, 600);
+            return ;
+          }
+      		this.clearBackground();
+      		this.drawBall();
+    			this.drawBoard();
+          this.state.scoreDOM.innerHTML = '得分：' + this.state.score;
+    			this.state.ballCenterX += this.state.speedX;
+    			this.state.ballCenterY += this.state.speedY;
+    			if(this.state.ballCenterX + this.state.ballRadius > this.state.gameViewWidth) {
+    				this.state.ballCenterX = this.state.gameViewWidth - this.state.ballRadius;
+    				this.state.speedX = -this.state.speedX;
+    			}
+    			if(this.state.ballCenterX - this.state.ballRadius < 0) {
+    				this.state.ballCenterX = this.state.ballRadius;
+    				this.state.speedX = -this.state.speedX;	
+    			}
+    			if(this.state.ballCenterY - this.state.ballRadius < 0) {
+    				this.state.ballCenterY = this.state.ballRadius;
+    				this.state.speedY = -this.state.speedY;
+    			}
+    			if(this.state.ballCenterY + this.state.ballRadius > this.state.gameViewHeight) {
+    				this.state.ballCenterY = this.state.gameViewHeight - this.state.ballRadius;
+    				this.state.speedY = -this.state.speedY;	
+    			}
+          //判断小球是否撞到挡板
+          var ballBottomY = this.state.ballCenterY + this.state.ballRadius;
+          if(ballBottomY > this.state.boardPosY) {
+            if(this.state.ballCenterX >= this.state.boardPosX && this.state.ballCenterX <= this.state.boardPosX + this.state.boardWidth) {
+              //撞到挡板
+              this.state.ballCenterY = this.state.boardPosY - this.state.ballRadius;
+              this.state.speedY = -this.state.speedY;
+              this.state.score += 10;
+              if(this.state.score >= 70) {
+                this.state.boardWidth = this.state.ballRadius * 4;
+              }else {
+                this.speedUp();
+              }
+            }else {
+              //游戏结束
+              this.state.isGameOver = true;
+            }
+          }
+      	},
+        speedUp: function() {
+          this.state.speedX = this.state.speedX > 0 ? this.state.speedX + this.state.speedDelta : this.state.speedX - this.state.speedDelta;
+          this.state.speedY = this.state.speedY > 0 ? this.state.speedY + this.state.speedDelta : this.state.speedY - this.state.speedDelta;
+        },
+      	startGame: function() {
+      		if(!this.state.isBegin) {
+      			var canvas = document.getElementById('game-canvas');
+      			var context = canvas.getContext('2d');
+				    context.fillStyle = '#6699FF';		      		
+	      		this.state.context = context;
+	      		this.drawBall();
+      			this.drawBoard();
+	      		this.state.timer = setInterval(this.draw, this.state.refreshInterval);
+	      		this.state.isBegin = true;
+            this.state.scoreDOM = document.getElementById('score-div');
+      		}
+      	},
+      	handleMouseMove: function(event) {
+      		// var x = event.clientX;
+          var x = event.targetTouches[0].clientX;
+      		this.state.boardPosX = x - parseInt(this.state.boardWidth / 2, 10);
+      		if(this.state.boardPosX < 0) {
+      			this.state.boardPosX = 0;
+      		}
+      		if(this.state.boardPosX + this.state.boardWidth > this.state.gameViewWidth) {
+      			this.state.boardPosX = this.state.gameViewWidth - this.state.boardWidth;
+      		}
+      	},
+        isOpenInWeiXin: function() {
+          var ua = window.navigator.userAgent.toLowerCase();
+          if(ua.match(/MicroMessenger/i) == 'micromessenger'){
+              return true;
+          }else{
+              return false;
+          }
+        }
+      });
+
+      ReactDOM.render(
+        <GameView />,
+        document.body
+      );
+    </script>
+</body>
+</html>
