@@ -10,6 +10,14 @@
   <script type="text/javascript" src="build/react-dom.min.js"></script>
   <script type="text/javascript" src="build/browser.min.js"></script>
   <style type="text/css">
+  * {
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    -khtml-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+  }
   body {
     text-align: center;
   }
@@ -50,6 +58,9 @@
     color: red;
     margin-top: 150px;
   }
+  .center-text {
+    text-align: center;
+  }
   </style>
 </head>
 <body>
@@ -80,10 +91,10 @@
 	      	};
       	},
       	render: function() {
-          if(!this.isOpenInWeiXin()) {
-            console.error('not open in weixin...');
-            return this.renderNotInWeixinView();
-          }
+          // if(!this.isOpenInWeiXin()) {
+          //   console.error('not open in weixin...');
+          //   return this.renderNotInWeixinView();
+          // }
           switch(this.state.stateCode) {
             case -1: //游戏结束
               return this.renderGameOverView();
@@ -100,6 +111,7 @@
           this.initData();
           return (
             <div className="welcome-view">
+              <div className="">手指在屏幕上左右滑动，控制挡板的左右移动</div>
               <div onClick={this.showGameView} id="welcome-div">
                 <div className="welcome-text">点击这里开始游戏！</div>
               </div>
