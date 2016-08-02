@@ -42,7 +42,7 @@
   .welcome-text {
     line-height: 50px;
   }
-  #score-result {
+  .hint-text {
     text-align: center;
     margin-bottom: 50px;
   }
@@ -60,6 +60,9 @@
   }
   .center-text {
     text-align: center;
+  }
+  img {
+    display: none;
   }
   </style>
 </head>
@@ -88,6 +91,8 @@
             scoreDOM: null,
             isGameOver: false,
             timer: null,
+            ballImage: null,
+            boardImage: null,
 	      	};
       	},
       	render: function() {
@@ -111,7 +116,7 @@
           this.initData();
           return (
             <div className="welcome-view">
-              <div className="">手指在屏幕上左右滑动，控制挡板的左右移动</div>
+              <div className="hint-text">手指在屏幕上左右滑动，控制挡板的左右移动</div>
               <div onClick={this.showGameView} id="welcome-div">
                 <div className="welcome-text">点击这里开始游戏！</div>
               </div>
@@ -134,6 +139,8 @@
         renderGameView: function() {
           return (
             <div>
+              <img id="img" class="image" src="images/ball.png" /> 
+              <img id="img-board" class="image" src="images/board.png" /> 
               <div id="score-div" width={this.state.gameViewWidth}>得分：0</div>
               <canvas 
                 id="game-canvas" 
@@ -147,7 +154,7 @@
           this.initData();
           return (
             <div className="gameover-view">
-              <div id="score-result"></div>
+              <div id="score-result" className="hint-text"></div>
               <div onClick={this.showGameView} id="welcome-div">
                 <div className="welcome-text">点击这里开始游戏！</div>
               </div>
@@ -173,16 +180,26 @@
         },
       	drawBall: function() {
       		var context = this.state.context;
-      		context.beginPath();
-      		context.arc(this.state.ballCenterX, this.state.ballCenterY, this.state.ballRadius, 0, Math.PI * 2, true);
-      		context.closePath();
-      		context.fillStyle = '#6699FF';
-      		context.fill();
+          var img = this.state.ballImage;
+          if(img != null) {
+            context.drawImage(img, this.state.ballCenterX - this.state.ballRadius, this.state.ballCenterY - this.state.ballRadius,
+                                  2 * this.state.ballRadius, 2 * this.state.ballRadius);
+          }
+          // context.beginPath();
+      		// context.arc(this.state.ballCenterX, this.state.ballCenterY, this.state.ballRadius, 0, Math.PI * 2, true);
+      		// context.closePath();
+      		// context.fillStyle = '#6699FF';
+      		// context.fill();
       	},
       	drawBoard: function() {
       		var context = this.state.context;
-      		context.fillStyle = '#6699FF';
-      		context.fillRect(this.state.boardPosX, this.state.boardPosY, this.state.boardWidth, this.state.boardHeight);
+          var img = this.state.boardImage;
+          if(img != null) {
+            context.drawImage(img, this.state.boardPosX, this.state.boardPosY, this.state.boardWidth, this.state.boardHeight); 
+          }
+      		// context.fillStyle = '#6699FF';
+      		// context.fillRect(this.state.boardPosX, this.state.boardPosY, this.state.boardWidth, this.state.boardHeight);
+        //   console.log('board width = ' + this.state.boardWidth + ', board height = ' + this.state.boardHeight);
       	},
       	clearBackground: function() {
       		var context = this.state.context;
@@ -257,6 +274,8 @@
 	      		this.state.timer = setInterval(this.draw, this.state.refreshInterval);
 	      		this.state.isBegin = true;
             this.state.scoreDOM = document.getElementById('score-div');
+            this.state.ballImage = document.getElementById('img');
+            this.state.boardImage = document.getElementById('img-board');
       		}
       	},
       	handleMouseMove: function(event) {
