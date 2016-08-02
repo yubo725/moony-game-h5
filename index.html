@@ -96,10 +96,9 @@
 	      	};
       	},
       	render: function() {
-          // if(!this.isOpenInWeiXin()) {
-          //   console.error('not open in weixin...');
-          //   return this.renderNotInWeixinView();
-          // }
+          if(!this.isOpenInWeiXin()) {
+            return this.renderNotInWeixinView();
+          }
           switch(this.state.stateCode) {
             case -1: //游戏结束
               return this.renderGameOverView();
