@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>MoonyGame</title>
+	<script type="text/javascript" src="build/react.min.js"></script>
+	<script type="text/javascript" src="build/react-dom.min.js"></script>
+	<script type="text/javascript" src="build/browser.min.js"></script>
+	<style type="text/css">
+	#canvas {
+		border: 1px solid black;
+	}
+	.start-game-btn {
+		width: 150px;
+		height: 50px;
+		line-height: 50px;
+		text-align: center;
+		border-radius: 5px;
+		border: 1px solid black;
+	}
+	</style>
+</head>
+<body>
+	<div id="container"></div>
+	<script type="text/babel">
+
+		//小球类
+		function Ball(x, y, radius) {
+			this.x = x;
+			this.y = y;
+			this.radius = radius;
+
+			this.originX = x;
+			this.originY = y;
+
+			this.speedX = 5;
+			this.speedY = 5;
+
+			//画小球的方法
+			this.drawMe = function(context) {
+				context.beginPath();
+				context.fillStyle = "#000000";
+				context.arc(this.x + this.radius, this.y + this.radius, this.radius, 0, 2 * Math.PI);
+				context.closePath();
+				context.fill();
+			}
+
+			//小球移动
+			this.move = function() {
+				this.x += this.speedX;
+				this.y += this.speedY;
+			}
+
+			//小球位置重置
+			this.reset = function() {
+				this.x = this.originX;
+				this.y = this.originY;
+				this.speedX = 5;
+				this.speedY = 5;
+			}
+		}
+
+		//挡板类
+		function Board(x, y, width, height) {
+			this.x = x;
+			this.y = y;
+			this.width = width;
+			this.height = height;
+
+			this.originX = x;
+			this.originY = y;
+
+			//画挡板
+			this.drawMe = function(context) {
+				context.fillStyle = "#000000";
+				context.fillRect(this.x, this.y, this.width, this.height);
+			}
+
+			//重置挡板的位置
+			this.reset = function() {
+				this.x = this.originX;
+				this.y = this.originY;
+			}
+		}
+
+		//游戏面板
+		var GameView = React.createClass({
+			getInitialState: function() { /** 生命周期方法，这里做一些初始化 */
+
+				//创建一个小球
+				var ballRadius = this.props.width / 30;
+				var ballX = this.props.width / 2 - ballRadius;
+				var ball = new Ball(ballX, 50, ballRadius);
+
+				//创建一个挡板
+				var boardWidth = this.props.width / 6;
+				var boardHeight = 10;
+				var boardX = (this.props.width - boardWidth) / 2;
+				var boardY = this.props.height - 100;
+				var board = new Board(boardX, boardY, boardWidth, boardHeight);
+
+				//返回state
+				return {
+					ball: ball,
+					board: board,
+					started: false,
+					stateCode: 0,
+				};
+			},
+			render: function() {
+				switch(this.state.stateCode) {
+					case -1:
+						return this.renderGameOverView();
+					break;
+					case 0:
+						return this.renderStartView();
+					break;
+					case 1:
+						return this.renderGameView();
+					break;
+				}
+			},
+			renderStartView: function() { /** 渲染游戏开始的视图 */
+				return (
+					<button className="start-game-btn" onClick={this.handleStartGameBtnClick}>开始游戏</button>
+				);
+			},
+			renderGameView: function() { /** 渲染游戏面板 */
+				console.error('render game view...');
+				return (
+					<canvas id="canvas" 
+							onMouseMove={this.handleMouseMove} 
+							width={this.props.width} 
+							height={this.props.height} />
+				);
+			},
+			renderGameOverView: function() { /** 渲染游戏结束的视图 */
+				return (
+					<div>
+						<p>游戏结束</p>
+						<button className="start-game-btn" onClick={this.handleStartGameBtnClick}>开始游戏</button>
+					</div>
+				);
+			},
+			componentDidMount: function() { /** 生命周期方法，render结束后自动被调用，仅调用一次 */
+				
+			},
+			componentDidUpdate: function() { /** 生命周期方法，组件更新完成后调用，可调用多次 */
+				if(this.state.stateCode == 1) {
+					this.state.context = document.getElementById('canvas').getContext('2d');
+					console.log('did update, start game...');
+					this.startGame();
+				}
+			},
+			clear: function() { /** 清除游戏区域的背景 */
+				this.state.context.clearRect(0, 0, this.props.width, this.props.height);
+			},
+			refreshGameView: function() { /** 刷新游戏区域 */
+				//每次刷新前都需要清除背景，不然小球和挡板上次的位置会被保留
+				this.clear();
+				this.state.ball.move();
+				//判断move后的小球位置
+				var ballX = this.state.ball.x;
+				var ballY = this.state.ball.y;
+				if(ballX < 0) {
+					this.state.ball.x = 0;
+					this.state.ball.speedX *= -1;
+				}
+				if(ballY < 0) {
+					this.state.ball.y = 0;
+					this.state.ball.speedY *= -1;
+				}
+				if(ballX + 2 * this.state.ball.radius > this.props.width) {
+					this.state.ball.x = this.props.width - 2 * this.state.ball.radius;
+					this.state.ball.speedX *= -1;
+				}
+				var ballBottomY = this.state.ball.y + 2 * this.state.ball.radius;
+				var ballCenterX = this.state.ball.x + this.state.ball.radius;
+				if(ballBottomY >= this.state.board.y) {
+					if(ballCenterX >= this.state.board.x && ballCenterX <= this.state.board.x + this.state.board.width) {
+						//反弹
+						this.state.ball.speedY *= -1;
+					}else {
+						//游戏结束
+						var timer = this.state.timer;
+						if(timer != undefined) {
+							clearInterval(timer);
+							this.setState({stateCode: -1});
+						}
+					}
+				}
+
+				//画小球和挡板
+				this.state.ball.drawMe(this.state.context);
+				this.state.board.drawMe(this.state.context);	
+			},
+			handleStartGameBtnClick: function() {
+				this.setState({stateCode: 1});
+			},
+			startGame: function() {
+				this.state.ball.reset();
+				this.state.board.reset();
+				this.refreshGameView();
+				var timer = setInterval(this.refreshGameView, this.props.refreshInterval);
+				this.state.timer = timer;
+				this.state.started = true;
+			},
+			handleMouseMove: function(event) { /** 处理鼠标的移动事件，移动鼠标的同时移动挡板 */
+				var x = event.clientX;
+				//将挡板的水平中心位置移到x处
+				var boardX = x - this.state.board.width / 2;
+				if(boardX < 0) {
+					boardX = 0;
+				}
+				if(boardX + this.state.board.width > this.props.width) {
+					boardX = this.props.width - this.state.board.width;
+				}
+				this.state.board.x = boardX;
+			}
+		});
+
+		var props = {
+			width: 300,
+			height: 500,
+			refreshInterval: 50
+		};
+		ReactDOM.render(
+			<GameView {...props} />,
+			document.getElementById('container')
+		);
+	</script>
+</body>
+</html>
